@@ -1,0 +1,9 @@
+module.exports.HOST = '0.0.0.0';
+module.exports.PORT = 8080;
+module.exports.SQL_HOST = 'localhost';
+module.exports.SQL_USER = 'root';
+module.exports.SQL_PASSWORD = '';
+module.exports.SQL_DATABASE = 'testUser';
+module.exports.KEY_1 = 'SUPER_SECRET1';
+module.exports.KEY_2 = 'SUPER_SECRET2';
+module.exports.email = '';
