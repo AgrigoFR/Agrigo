@@ -1,8 +1,8 @@
-var tools = require('./tools');
-var email = require('./email');
-var variables = require('./variables');
-var mysql = require('mysql');
-var bcrypt = require('bcrypt');
+const tools = require('./tools');
+const email = require('./email');
+const variables = require('./variables');
+const mysql = require('mysql');
+const bcrypt = require('bcrypt');
 
 var pool = mysql.createPool({
   connectionLimit : 100,
@@ -45,8 +45,9 @@ exports.signin = function(req, res) {
       return;
     });
     email = pool.escape(email);
-    connection.query("SELECT password from User WHERE email = " + email,function(err,rows){
+    connection.query("SELECT password, fk_company from User WHERE email = " + email, function(err,rows) {
       if(!err) {
+        var password = pool.escape(rows[0].password);
         if (rows.length != 1) {
           res.json({code : 100, status : "Adresse email inconnue"});
           return;
@@ -56,9 +57,26 @@ exports.signin = function(req, res) {
           return;
         }
         else {
-          if (bcrypt.compareSync(password, rows[0].password)) {
-            res.json({code : 200, status : "Connecté"});
-            return;
+          if (bcrypt.compareSync(password, password)) {
+            connection.query("SELECT siren FROM Company WHERE id = " + rows[0].fk_company, function (err, rows2) {
+              if (!err) {
+                var renvoi = {
+                  'nom' : nom,
+                  'prenom' : prenom,
+                  'raisonSociale' : raisonSociale,
+                  'email' : email,
+                  'siren' : siren,
+                  'fk_company' : rows2[0].fk_company,
+                  'id' : rows[0].insertId
+                }
+                req.session.cookie = renvoi;
+                res.json({code : 200, status : renvoi});
+                return;
+              }
+              else {
+
+              }
+            })
           }
           else {
             res.json({code : 100, status : "Mot de passe incorrect"});
@@ -100,11 +118,11 @@ exports.oubli = function(req, res) {
               return;
             }
             else {
-              randomString = tools.randomString();
-              console.log("Date : "+Date.now());
-              connection.query("UPDATE User SET oubli = '"+randomString+"', oubliDuree = '"+Date.now()+"' WHERE email = "+pool.escape(rows[0].email));
+              randomString = pool.escape(tools.randomString());
+              connection.query("UPDATE User SET oubli = "+randomString+", oubliDuree = "+Date.now()+" WHERE email = "+pool.escape(rows[0].email));
               connection.release();
-              tools.envoiOubliMotDePasse(rows[0].nom, rows[0].prenom, email, randomString);
+              /*tools.envoiOubliMotDePasse(rows[0].nom, rows[0].prenom, email, randomString);
+              ENVOI EMAIL */
               res.json({code : 200, status : "Vous allez recevoir un email"});
               return;
             }
@@ -115,7 +133,7 @@ exports.oubli = function(req, res) {
   }
 }
 
-exports.retrouver = function (req, res) {
+exports.premiereConnexion = function (req, res) {
   if (req.session.cookie != null) {
     res.json({code : 200, status : "Déjà connecté"});
     return;
@@ -160,7 +178,7 @@ exports.retrouver = function (req, res) {
         res.json({code : 100, status : "Error in connection database"});
         return;
       });
-      connection.query("SELECT oubli, oubliDuree, timestamp FROM User WHERE email = " + email, function(err,rows) {
+      connection.query("SELECT oubli, oubliDuree, nom, prenom, fk_company, id, timestamp FROM User WHERE email = " + email, function (err,rows) {
         if(!err) {
           if (rows.length != 1) {
             res.json({code : 100, status : "Adresse email inconnue"});
@@ -178,10 +196,32 @@ exports.retrouver = function (req, res) {
               }
               else {
                 password = pool.escape(bcrypt.hashSync(password, 12));
-                connection.query("UPDATE User SET password = "+password+", oubli = NULL WHERE email = "+email, function(err, rows) {
-                  connection.release();
+                connection.query("UPDATE User SET password = "+password+", oubli = NULL, \
+                 oubliDuree = NULL WHERE email = "+email, function(err, rows2) {
                   if (!err) {
-                    res.json({code : 200, status : "Mot de passe mis à jour"});
+                    connection.query("SELECT siren, raisonSociale FROM Company WHERE id="+rows[0].fk_company, function (err, rows3) {
+                      if (!err) {
+                        var renvoi = {
+                          'nom' : rows[0].nom,
+                          'prenom' : rows[0].prenom,
+                          'raisonSociale' : rows3[0].raisonSociale,
+                          'email' : email,
+                          'siren' : rows[3].siren,
+                          'fk_company' : rows[0].fk_company,
+                          'id' : rows[0].id
+                        }
+                        req.session.cookie = renvoi;
+                        res.json({code : 200, status : renvoi});
+                        return;
+                      }
+                      else {
+                        res.json({code : 100, status : "Error in connection database"});
+                        return;
+                      }
+                    });
+                  }
+                  else {
+                    res.json({code : 100, status : "Error in connection database"});
                     return;
                   }
                 });

@@ -1,4 +1,4 @@
-var request = require('request');
+const request = require('request');
 
 exports.isNumber = function(siren) {
   return typeof siren == "number" || (typeof siren == "object" && siren.constructor === Number);
@@ -30,6 +30,11 @@ exports.randomString = function() {
     text += possible.charAt(Math.floor(Math.random() * possible.length));
 
   return text;
+}
+
+exports.getExtensionFichier = function(nomFichier) {
+  var res = nomFichier.split(".");
+  return res[1];
 }
 
 exports.isValidDate = function(date) {

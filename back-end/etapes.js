@@ -1,8 +1,7 @@
-var request = require('request');
-var tools = require('./tools');
-var variables = require('./variables');
-var mysql = require('mysql');
-var bcrypt = require('bcrypt');
+const tools = require('./tools');
+const variables = require('./variables');
+const mysql = require('mysql');
+const bcrypt = require('bcrypt');
 
 var pool = mysql.createPool({
   connectionLimit : 100,
@@ -95,8 +94,8 @@ exports.etape1 = function(req, res) {
     apport = pool.escape(apport);
     motif = pool.escape(motif);
     email = pool.escape(email);
-
-    pool.getConnection(function(err,connection){
+    randomString = pool.escape(tools.randomString());
+    pool.getConnection(function(err,connection) {
       if (err) {
         res.json({code : 100, status : "Error in connection database"});
         return;
@@ -106,7 +105,11 @@ exports.etape1 = function(req, res) {
         return;
       });
       connection.query("SELECT email from User WHERE email = " + email, function(err,rows) {
-        if(!err) {
+        if(err) {
+          res.json({code : 100, status : "Error in connection database"});
+          return;
+        }
+        else {
           if (rows.length > 0) {
             res.json({code : 100, status : "L'adresse email a déjà été utilisée"});
             return;
@@ -126,9 +129,10 @@ exports.etape1 = function(req, res) {
                     return;
                   }
                   else {
-                    connection.query("INSERT INTO User (email, fk_company) \
-                    VALUES ("+email+", "+rows2.insertId+")", function(err, rows4) {
+                    connection.query("INSERT INTO User (email, oubli, oubliDuree, fk_company) \
+                    VALUES ("+email+", "+randomString+", "+Date.now()+", "+rows2.insertId+")", function(err, rows4) {
                       if (err) {
+                        console.log(err);
                         res.json({code : 100, status : "Error in connection database"});
                         return;
                       }
@@ -140,6 +144,7 @@ exports.etape1 = function(req, res) {
                           var cookie = {
                             'email' : email,
                           }
+                          /* SI l'utilisateur ne passe pas l'étape 2, envoie d'un email */
                           req.session.cookie = cookie;
                           res.json({code : 200, status : renvoi});
                           return;
@@ -165,6 +170,7 @@ exports.etape2 = function(req, res) {
   var cookie = req.session.cookie;
   if (cookie == null) {
     res.json({code : 100, status : "La partie 1 n'est pas complète"});
+    return;
   }
   var errors = [];
   var listeContacts = [
@@ -264,25 +270,15 @@ exports.etape2 = function(req, res) {
     return;
   }
   else {
-    var renvoi = {
-      'nom' : nom,
-      'prenom' : prenom,
-      'raisonSociale' : raisonSociale,
-      'email' : email,
-      'siren' : siren
-    }
     raisonSociale = pool.escape(raisonSociale);
     rue = pool.escape(rue);
     ville = pool.escape(ville);
-    dob = pool.escape(dob);
     activite = pool.escape(activite);
-    nom = pool.escape(nom);
-    prenom = pool.escape(prenom);
     codePostal = pool.escape(codePostal);
     password = pool.escape(bcrypt.hashSync(password, 12));
     telephone = pool.escape(telephone);
     contact = pool.escape(contact);
-    pool.getConnection(function(err,connection){
+    pool.getConnection(function(err,connection) {
       if (err) {
         res.json({code : 100, status : "Error in connection database"});
         return;
@@ -291,9 +287,8 @@ exports.etape2 = function(req, res) {
         res.json({code : 100, status : "Error in connection database"});
         return;
       });
-      connection.query("INSERT INTO User (nom, prenom, dob, telephone, password) \
-      VALUES ("+nom+", "+prenom+", "+dob+", "+telephone+", \
-      "+password+") WHERE email = "+email, function(err,rows) {
+      connection.query("UPDATE User SET telephone = "+telephone+", SET password = "+password+", \
+       SET civilite="+civilite+", SET oubli = NULL, SET oubliDuree = NULL WHERE email = "+email, function(err, rows) {
         if(err) {
           res.json({code : 100, status : "Error in connection database"});
           return;
@@ -305,8 +300,8 @@ exports.etape2 = function(req, res) {
               return;
             }
             else {
-              connection.query("INSERT INTO Company (rue, ville, codePostal, activite, raisonSociale) \
-              VALUES ("+rue+", "+ville+", "+codePostal+", "+activite+", "+raisonSociale+") \
+              connection.query("UPDATE Company SET rue = "+rue+", SET ville = "+ville+", \
+              SET codePostal = "+codePostal+", SET activite = "+activite+", SET raisonSociale = "+raisonSociale+" \
               WHERE id ="+rows2[0].fk_company, function(err, rows3) {
                 connection.release();
                 if (err) {
@@ -314,6 +309,15 @@ exports.etape2 = function(req, res) {
                   return;
                 }
                 else {
+                  var renvoi = {
+                    'nom' : nom,
+                    'prenom' : prenom,
+                    'raisonSociale' : raisonSociale,
+                    'email' : email,
+                    'siren' : siren,
+                    'fk_company' : rows2[0].fk_company,
+                    'id' : rows[0].insertId
+                  }
                   req.session.cookie = renvoi;
                   res.json({code : 200, status : renvoi});
                   return;

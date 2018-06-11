@@ -20,7 +20,7 @@ exports.envoiOubliMotDePasse = function(nom, prenom, email, key) {
     text: message,
     html: '<b>' + message + '</b>'
   };
-  
+
   smtpTransport.sendMail(mail, function(error, response){
      if(error) {
 				console.log("Erreur lors de l'envoie du mail!");

@@ -1,0 +1,26 @@
+version: '3.6'
+
+services:
+  db:
+    container_name: agrigomysql
+    image: mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+    volumes:
+      - /home/agrigo/database/:/var/lib/mysql
+
+  backend:
+    container_name: agrigobackend
+    build: ./back-end
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+
+  proxy:
+    container_name: agrigonginx
+    image: nginx:alpine
+    volumes:
+      -  ./agrigo.conf:/etc/nginx/nginx.conf
+    ports:
+      - 81:80

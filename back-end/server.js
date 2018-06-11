@@ -3,30 +3,30 @@
 const express = require('express');
 
 // Constants
-var http = require('http');
-var bodyParser = require('body-parser');
-var cookieSession = require('cookie-session')
-var Keygrip = require('keygrip');
-var request = require('request');
-var tools = require('./tools');
-var etapes = require('./etapes');
-var authentification = require('./authentification');
-var variables = require('./variables');
+const http = require('http');
+const bodyParser = require('body-parser');
+const cookieSession = require('cookie-session')
+const Keygrip = require('keygrip');
+const request = require('request');
+const tools = require('./tools');
+const etapes = require('./etapes');
+const authentification = require('./authentification');
+const variables = require('./variables');
+const utilisateurs = require('./utilisateurs');
+const helmet = require('helmet');
+const fileUpload = require('express-fileupload');
 
 const PORT = variables.PORT;
 const HOST = variables.HOST;
-/*var pool = mysql.createPool({
-connectionLimit : 100,
-host: "db",
-user: "soren",
-password: "password",
-multipleStatements: false
-});*/
 
 // App
-const app = express();
-var helmet = require('helmet');
+var app = express();
+
 app.use(helmet());
+app.use(fileUpload({
+  safeFileNames: true,
+  preserveExtention: true
+}));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
   extended: true
@@ -39,13 +39,16 @@ app.use(cookieSession({
   maxAge: 24 * 60 * 60 * 1000
 }));
 
+app.use(fileUpload({
+  limits: { fileSize: 20 * 1024 * 1024 },
+}));
 app.set('trust proxy', 1);
 
 app.get('/', (req, res) => {
-  req.session.views = (req.session.views || 0) + 1
+  req.session.views = (req.session.views || 0) + 1;
 
   // Write response
-  res.end(req.session.views + ' views' + ' ' + req.session.siren);
+  res.end(req.session.views + ' views');
 });
 
 app.post('/etape1', (req, res) => {
@@ -58,7 +61,7 @@ app.post('/oubli', (req, res) => {
   authentification.oubli(req, res);
 });
 app.post('/retrouver', (req, res) => {
-  authentification.retrouver(req, res);
+  authentification.premiereConnexion(req, res);
 });
 
 app.listen(PORT, HOST);
