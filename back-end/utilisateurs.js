@@ -53,14 +53,26 @@ exports.changerMotDePasse = function(req, res) {
       });
       password = pool.escape(bcrypt.hashSync(password, 12));
       connection.query("UPDATE User SET password="+password+" WHERE id="+id, function(err,rows) {
-        if(!err) {
-          renvoi = req.session.cookie;
-          res.json({code : 200, status : renvoi});
+        if(err) {
+          res.json({code : 100, status : "Error in connection database"});
           return;
         }
         else {
-          res.json({code : 100, status : "Error in connection database"});
-          return;
+          connection.query("SELECT fichier1, fichier2, fichier3 FROM User WHERE id = \
+           "+pool.escape(req.session.cookie.id), function(err, rows2) {
+            if (err) {
+              res.json({code : 100, status : "Error in connection database"});
+              return;
+            }
+            else {
+              renvoi = req.session.cookie;
+              renvoi.fichier1 = rows2[0].fichier1;
+              renvoi.fichier2 = rows2[0].fichier2;
+              renvoi.fichier3 = rows2[0].fichier3;
+              res.json({code : 200, status : renvoi});
+              return;
+            }
+          });
         }
       });
     });
@@ -97,9 +109,21 @@ exports.changerNumeroDeTelephone = function(req, res) {
           return;
         }
         else {
-          renvoi = req.session.cookie;
-          res.json({code : 200, status : renvoi});
-          return;
+          connection.query("SELECT fichier1, fichier2, fichier3 FROM User WHERE id = \
+           "+pool.escape(req.session.cookie.id), function(err, rows2) {
+            if (err) {
+              res.json({code : 100, status : "Error in connection database"});
+              return;
+            }
+            else {
+              renvoi = req.session.cookie;
+              renvoi.fichier1 = rows2[0].fichier1;
+              renvoi.fichier2 = rows2[0].fichier2;
+              renvoi.fichier3 = rows2[0].fichier3;
+              res.json({code : 200, status : renvoi});
+              return;
+            }
+          });
         }
       });
     });
@@ -141,16 +165,28 @@ exports.inviterNouvelUtilisateur = function(req, res) {
             }
             else {
               connection.query("INSERT INTO User (email, oubli, oubliDuree, fk_company) \
-               VALUES("+email+", "+randomString+", "+Date.now()+", "+req.session.cookie.fk_company+")", function(err,rows) {
+               VALUES("+email+", "+randomString+", "+Date.now()+", "+pool.escape(req.session.cookie.fk_company)+")", function(err,rows) {
                 if(err) {
                   res.json({code : 100, status : "Error in connection database"});
                   return;
                 }
                 else {
-                  /* ENVOYER UN EMAIL POUR QUE L'UTILISATEUR FINALISE SON INSCRIPTION */
-                  renvoi = req.session.cookie;
-                  res.json({code : 200, status : renvoi});
-                  return;
+                  connection.query("SELECT fichier1, fichier2, fichier3 FROM User WHERE id = \
+                   "+pool.escape(req.session.cookie.id), function(err, rows2) {
+                    if (err) {
+                      res.json({code : 100, status : "Error in connection database"});
+                      return;
+                    }
+                    else {
+                      /* ENVOYER UN EMAIL POUR QUE L'UTILISATEUR FINALISE SON INSCRIPTION */
+                      renvoi = req.session.cookie;
+                      renvoi.fichier1 = rows2[0].fichier1;
+                      renvoi.fichier2 = rows2[0].fichier2;
+                      renvoi.fichier3 = rows2[0].fichier3;
+                      res.json({code : 200, status : renvoi});
+                      return;
+                    }
+                  });
                 }
               });
             }
@@ -211,10 +247,9 @@ async function uploadFichier(req) {
     connection.on('error', function(err) {
       return 1;
     });
-    connection.query("SELECT fk_company from User WHERE email = " + pool.escape(req.session.email), function(err,rows) {
+    connection.query("SELECT fk_company from User WHERE email = " + pool.escape(req.session.email), function(err, rows) {
       if(err) {
-        res.json({code : 100, status : "Error in connection database"});
-        return;
+        return 1;
       }
       else {
         if (req.files.fichier1) {
@@ -223,7 +258,12 @@ async function uploadFichier(req) {
           if (listeExtensions.indexOf(extension1) != -1) {
             if (req.files.fichier1.truncated == false) {
               mkdirp('/tmp/'+rows[0].fk_company);
-              req.files.fichier1.mv('/tmp/'+rows[0].fk_company+'/1'+extension1);
+              req.files.fichier1.mv('/tmp/'+rows[0].fk_company+'/'+nomFichier1);
+              connection.query("UPDATE User SET fichier1 ="+pool.escape(nomFichier1)+" WHERE email = "+pool.escape(req.session.email), function (err, rows2) {
+                if (err) {
+                  return 1;
+                }
+              });
             }
           }
         }
@@ -233,7 +273,12 @@ async function uploadFichier(req) {
           if (listeExtensions.indexOf(extension2) != -1) {
             if (req.files.fichier2.truncated == false) {
               mkdirp('/tmp/'+rows[0].fk_company);
-              req.files.fichier2.mv('/tmp/'+rows[0].fk_company+'/2'+extension2);
+              req.files.fichier2.mv('/tmp/'+rows[0].fk_company+'/'+nomFichier2);
+              connection.query("UPDATE User SET fichier2 ="+pool.escape(nomFichier2)+" WHERE email = "+pool.escape(req.session.email), function (err, rows3) {
+                if (err) {
+                  return 1;
+                }
+              });
             }
           }
         }
@@ -243,7 +288,12 @@ async function uploadFichier(req) {
           if (listeExtensions.indexOf(extension3) != -1) {
             if (req.files.fichier3.truncated == false) {
               mmkdirp('/tmp/'+rows[0].fk_company);
-              req.files.fichier3.mv('/tmp/'+rows[0].fk_company+'/3'+extension3);
+              req.files.fichier3.mv('/tmp/'+rows[0].fk_company+'/'+nomFichier3);
+              connection.query("UPDATE User SET fichier3 ="+pool.escape(nomFichier3)+" WHERE email = "+pool.escape(req.session.email), function (err, rows4) {
+                if (err) {
+                  return 1;
+                }
+              });
             }
           }
         }
