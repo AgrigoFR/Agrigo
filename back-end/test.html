@@ -1,0 +1,44 @@
+<script src="http://code.jquery.com/jquery.js"></script>
+<script>
+function callServer() {
+  var data = {};
+  data.siren = document.getElementById("siren").value;
+  data.ca = document.getElementById("ca").value;
+  data.apport = document.getElementById("apport").value;
+  data.montant = document.getElementById("montant").value;
+  data.motif = document.getElementById("motif").value;
+  data.reglement = document.getElementById("reglement").value;
+  data.email = document.getElementById("email").value;
+
+  $.ajax({
+    type: 'POST',
+    data: JSON.stringify(data),
+    contentType: 'application/json',
+    url: 'http://localhost:8080/etape1',
+    success: function(data) {
+      if (data.code == 100) {
+        onFail(data);
+      }
+      else if (data.code == 200) {
+        onSuccess(data);
+      }
+    },
+    error: function() {
+
+    }
+  });
+}
+
+function onSuccess(data) {
+  data.getElementById("rue").value = data.status.rue;
+  data.getElementById("codePostal").value = data.status.codePostal;
+  data.getElementById("ville").value = data.status.ville;
+  data.getElementById("activite").value = data.status.activite;
+  data.getElementById("raisonSociale").value = data.status.raisonSociale;
+}
+
+function onFail(data) {
+  console.log(data.status);
+}
+
+</script>

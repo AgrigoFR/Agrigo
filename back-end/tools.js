@@ -1,11 +1,13 @@
 const request = require('request');
 
 exports.isNumber = function(siren) {
-  return typeof siren == "number" || (typeof siren == "object" && siren.constructor === Number);
+  return typeof siren == "number" || (typeof siren == "object" && 
+siren.constructor === Number);
 }
 
 exports.validateEmail = function(email) {
-  var re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+  var re = 
+/^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
   return re.test(email);
 }
 
@@ -24,10 +26,12 @@ exports.isEmpty = function(str) {
 
 exports.randomString = function() {
   var text = "";
-  var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  var possible = 
+"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
   for (var i = 0; i < 20; i++)
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
+    text += possible.charAt(Math.floor(Math.random() * 
+possible.length));
 
   return text;
 }
@@ -52,11 +56,15 @@ exports.isValidDate = function(date) {
         // correct year value
         if (dateArray[2].length<4) {
             // correct year value
-            dateArray[2] = (parseInt(dateArray[2]) < 50) ? 2000 + parseInt(dateArray[2]) : 1900 + parseInt(dateArray[2]);
+            dateArray[2] = (parseInt(dateArray[2]) < 50) ? 2000 + 
+parseInt(dateArray[2]) : 1900 + parseInt(dateArray[2]);
         }
 
-        var testDate = new Date(dateArray[2], dateArray[1], dateArray[0]);
-        if (testDate.getDate()!=dateArray[0] || testDate.getMonth()!=dateArray[1] || testDate.getFullYear()!=dateArray[2]) {
+        var testDate = new Date(dateArray[2], dateArray[1], 
+dateArray[0]);
+        if (testDate.getDate()!=dateArray[0] || 
+testDate.getMonth()!=dateArray[1] || 
+testDate.getFullYear()!=dateArray[2]) {
             return false;
         } else {
             return true;
@@ -68,7 +76,8 @@ exports.isValidDate = function(date) {
 
 exports.getInfoSiren = function(siren) {
   var url = 'https://data.opendatasoft.com/api/records/1.0/search/' +
-            '?dataset=sirene%40public&rows=1&facet=section&refine.siren=';
+            
+'?dataset=sirene%40public&rows=1&facet=section&refine.siren=';
   url += siren;
   return new Promise((resolve, reject) => {
     request(url, function (err, response, body) {
@@ -90,3 +99,4 @@ exports.getInfoSiren = function(siren) {
     });
   });
 }
+

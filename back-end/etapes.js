@@ -16,11 +16,12 @@ exports.etape1 = function(req, res) {
   var errors = [];
 
   var listeMotifs = [
-    "Achat matériel",
-    "Acquisition de fond de commerce",
-    "Immobilier",
-    "Travaux/Rénovation",
+    "Fond de commerce",
+    "Achat de matériel",
     "Trésorerie",
+    "Travaux / Réparation",
+    "Développement",
+    "Foncier",
     "Autre"
   ]
 
@@ -288,7 +289,8 @@ exports.etape2 = function(req, res) {
         return;
       });
       connection.query("UPDATE User SET telephone = "+telephone+", SET password = "+password+", \
-       SET civilite="+civilite+", SET oubli = NULL, SET oubliDuree = NULL WHERE email = "+email, function(err, rows) {
+       SET civilite="+civilite+", SET fonction = "+fonction+" SET oubli = NULL, \
+       SET oubliDuree = NULL WHERE email = "+email, function(err, rows) {
         if(err) {
           res.json({code : 100, status : "Error in connection database"});
           return;

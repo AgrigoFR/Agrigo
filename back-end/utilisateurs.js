@@ -77,7 +77,7 @@ exports.changerNumeroDeTelephone = function(req, res) {
     telephone = telephone.replace(/\s+/g, '').replace('.', '');
     telephone = parseInt(telephone, 10);
     if (!tools.isNumber(telephone) || telephone.toString().length < 10 || telephone.toString().length > 12) {
-      res.json({code : 100, status : errors});
+      res.json({code : 100, status : "Le numéro de téléphone est invalide"});
       return;
     }
 
@@ -92,13 +92,13 @@ exports.changerNumeroDeTelephone = function(req, res) {
       });
       password = pool.escape(bcrypt.hashSync(password, 12));
       connection.query("UPDATE User SET telephone="+telephone+" WHERE id="+id, function(err,rows) {
-        if(!err) {
-          renvoi = req.session.cookie;
-          res.json({code : 200, status : renvoi});
+        if(err) {
+          res.json({code : 100, status : "Error in connection database"});
           return;
         }
         else {
-          res.json({code : 100, status : "Error in connection database"});
+          renvoi = req.session.cookie;
+          res.json({code : 200, status : renvoi});
           return;
         }
       });
@@ -114,46 +114,11 @@ exports.inviterNouvelUtilisateur = function(req, res) {
   else {
     var email = req.body.email;
     if (!tools.validateEmail(email) || email.length > 100) {
-      errors.push("L'adresse email est invalide");
-    }
-
-    var civilite = req.body.civilite;
-    if (civilite != "Monsieur" || civilite != "Madame") {
-      errors.push("La civilité est invalide");
-    }
-
-    var telephone = req.body.telephone;
-    telephone = telephone.replace(/\s+/g, '').replace('.', '');
-    telephone = parseInt(telephone, 10);
-    if (!tools.isNumber(telephone) || telephone.toString().length < 10 || telephone.toString().length > 12) {
-      errors.push("Le numéro de téléphone est invalide");
-    }
-
-    var nom = req.body.nom;
-    if (tools.isEmpty(nom) || nom.length > 100) {
-      errors.push("Le nom est invalide");
-    }
-
-    var prenom = req.body.prenom;
-    if (tools.isEmpty(prenom) || prenom.length > 100) {
-      errors.push("Le prénom est invalide");
-    }
-
-    var dob = req.body.dob;
-    if (!isValidDate(dob)) {
-      errors.push("La date de naissance est invalide");
-    }
-
-    if (errors == null || errors.length != 0 || errors == undefined) {
-      res.json({code : 100, status : errors});
+      res.json({code : 100, status : "L'adresse email est invalide"});
       return;
     }
     else {
-      nom = pool.escape(nom);
-      dob = pool.escape(dob);
-      prenom = pool.escape(prenom);
       email = pool.escape(email);
-      civilite = pool.escape(civilite)
       randomString = pool.escape(tools.randomString());
       pool.getConnection(function(err,connection) {
         if (err) {
@@ -164,17 +129,31 @@ exports.inviterNouvelUtilisateur = function(req, res) {
           res.json({code : 100, status : "Error in connection database"});
           return;
         });
-        connection.query("INSERT INTO User (nom, prenom, dob, civilite, email, oubli, oubliDuree, fk_company) \
-         VALUES("+nom+", "+prenom+", "+dob+", "+civilite+", "+randomString+", "+Date.now()+", "+email+", "+req.session.cookie.fk_company+")", function(err,rows) {
+        connection.query("SELECT email from User WHERE email = " + email, function(err,rows) {
           if(err) {
             res.json({code : 100, status : "Error in connection database"});
             return;
           }
           else {
-            /* ENVOYER UN EMAIL POUR QUE L'UTILISATEUR FINALISE SON INSCRIPTION */
-            renvoi = req.session.cookie;
-            res.json({code : 200, status : renvoi});
-            return;
+            if (rows.length > 0) {
+              res.json({code : 100, status : "L'adresse email a déjà été utilisée"});
+              return;
+            }
+            else {
+              connection.query("INSERT INTO User (email, oubli, oubliDuree, fk_company) \
+               VALUES("+email+", "+randomString+", "+Date.now()+", "+req.session.cookie.fk_company+")", function(err,rows) {
+                if(err) {
+                  res.json({code : 100, status : "Error in connection database"});
+                  return;
+                }
+                else {
+                  /* ENVOYER UN EMAIL POUR QUE L'UTILISATEUR FINALISE SON INSCRIPTION */
+                  renvoi = req.session.cookie;
+                  res.json({code : 200, status : renvoi});
+                  return;
+                }
+              });
+            }
           }
         });
       });

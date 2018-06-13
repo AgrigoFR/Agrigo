@@ -14,6 +14,7 @@ const authentification = require('./authentification');
 const variables = require('./variables');
 const utilisateurs = require('./utilisateurs');
 const helmet = require('helmet');
+const cors = require('cors');
 const fileUpload = require('express-fileupload');
 
 const PORT = variables.PORT;
@@ -23,6 +24,7 @@ const HOST = variables.HOST;
 var app = express();
 
 app.use(helmet());
+app.use(cors());
 app.use(fileUpload({
   safeFileNames: true,
   preserveExtention: true
@@ -34,6 +36,7 @@ app.use(bodyParser.urlencoded({
 
 app.use(cookieSession({
   name: 'session',
+  sameSite: 'strict',
   keys: new Keygrip([variables.KEY_1, variables.KEY_2], 'SHA384', 'base64'),
   httpOnly: true,
   maxAge: 24 * 60 * 60 * 1000
@@ -58,10 +61,10 @@ app.post('/etape2', (req, res) => {
   etapes.etape2(req, res);
 });
 app.post('/oubli', (req, res) => {
-  authentification.oubli(req, res);
+  authentification.envoiOubliMotDePasse(req, res);
 });
 app.post('/retrouver', (req, res) => {
-  authentification.premiereConnexion(req, res);
+  authentification.retrouverMotDePasse(req, res);
 });
 
 app.listen(PORT, HOST);
